@@ -248,8 +248,8 @@ impl NusbFastBoot {
     }
 
     /// Reboot the device
-    pub async fn reboot(&mut self) -> Result<(), NusbFastBootError> {
-        let cmd = FastBootCommand::<&str>::Reboot;
+    pub async fn reboot(&mut self, mode: &str) -> Result<(), NusbFastBootError> {
+        let cmd = FastBootCommand::<&str>::Reboot(mode);
         self.execute(cmd).await.map(|v| {
             trace!("Reboot ok: {v}");
         })

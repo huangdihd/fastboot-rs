@@ -43,7 +43,7 @@ pub enum FastBootCommand<S> {
     /// Continue booting
     Continue,
     /// Reboot the devices
-    Reboot,
+    Reboot(S),
     /// Reboot into the bootloader
     RebootBootloader,
     /// Power off the device
@@ -60,7 +60,7 @@ impl<S: Display> Display for FastBootCommand<S> {
             FastBootCommand::Erase(part) => write!(f, "erase:{part}"),
             FastBootCommand::Boot => write!(f, "boot"),
             FastBootCommand::Continue => write!(f, "continue"),
-            FastBootCommand::Reboot => write!(f, "reboot"),
+            FastBootCommand::Reboot(mode) => write!(f, "reboot:{mode}"),
             FastBootCommand::RebootBootloader => write!(f, "reboot-bootloader"),
             FastBootCommand::Powerdown => write!(f, "powerdown"),
         }
