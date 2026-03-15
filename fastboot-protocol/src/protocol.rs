@@ -60,7 +60,7 @@ impl<S: Display> Display for FastBootCommand<S> {
             FastBootCommand::Erase(part) => write!(f, "erase:{part}"),
             FastBootCommand::Boot => write!(f, "boot"),
             FastBootCommand::Continue => write!(f, "continue"),
-            FastBootCommand::Reboot(mode) => write!(f, "reboot:{mode}"),
+            FastBootCommand::Reboot(mode) => write!(f, "reboot-{mode}"),
             FastBootCommand::RebootBootloader => write!(f, "reboot-bootloader"),
             FastBootCommand::Powerdown => write!(f, "powerdown"),
         }
