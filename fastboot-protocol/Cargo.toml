@@ -12,7 +12,7 @@ repository = "https://github.com/boardswarm/fastboot-rs"
 [dependencies]
 bytes = "1.11.0"
 futures = "0.3.31"
-nusb = { version =  "0.2.3", features = ["tokio"] }
+nusb = { version = "0.2.3", features = ["tokio"] }
 thiserror = "2.0.3"
 tracing = "0.1.40"
 
