@@ -150,7 +150,7 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Opts::Flash { target, file } => flash(&mut fb, &target, &file).await?,
-        Opts::Reboot => fb.reboot("system").await?,
+        Opts::Reboot => fb.reboot().await?,
     }
 
     Ok(())
