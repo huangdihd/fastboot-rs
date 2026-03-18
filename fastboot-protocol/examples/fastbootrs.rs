@@ -50,7 +50,7 @@ where
 
 async fn flash(fb: &mut NusbFastBoot, target: &str, file: &Path) -> anyhow::Result<()> {
     let max_download = fb.get_var("max-download-size").await?;
-    let max_download = fastboot_protocol::protocol::parse_u32_hex(&max_download)
+    let max_download = u32::from_str_radix(&*max_download, 10)
         .with_context(|| anyhow::anyhow!("Failed to parse max download size: {max_download}"))?;
     println!("Max download size: {max_download}");
 

@@ -1,7 +1,6 @@
 use nusb::transfer::{Buffer, In, Out};
 use nusb::transfer::Bulk;
 use std::{collections::HashMap, fmt::Display, io::Write};
-use std::time::Duration;
 pub use nusb::{transfer::TransferError, Device, DeviceInfo, Interface};
 use nusb::descriptors::TransferType;
 use nusb::Endpoint;
@@ -22,7 +21,7 @@ pub async fn devices() -> Result<impl Iterator<Item = DeviceInfo>, nusb::Error> 
 #[derive(Debug, Error)]
 pub enum NusbFastBootError {
     #[error("Transfer error: {0}")]
-    Transfer(#[from] nusb::transfer::TransferError),
+    Transfer(#[from] TransferError),
     #[error("Fastboot client failure: {0}")]
     FastbootFailed(String),
     #[error("Unexpected fastboot response")]
@@ -70,7 +69,7 @@ impl NusbFastBoot {
     /// Create a fastboot client based on a USB interface. Interface is assumed to be a fastboot
     /// interface
     #[tracing::instrument(skip_all, err)]
-    pub fn from_interface(interface: nusb::Interface) -> Result<Self, NusbFastBootOpenError> {
+    pub fn from_interface(interface: Interface) -> Result<Self, NusbFastBootOpenError> {
         let (ep_out, max_out, ep_in, max_in) = interface
             .descriptors()
             .find_map(|alt| {
@@ -207,7 +206,7 @@ impl NusbFastBoot {
     /// Prepare a download of a given size
     ///
     /// When successfull the [DataDownload] helper should be used to actually send the data
-    pub async fn download(&mut self, size: u32) -> Result<DataDownload, NusbFastBootError> {
+    pub async fn download(&'_ mut self, size: u32) -> Result<DataDownload<'_>, NusbFastBootError> {
         let cmd = FastBootCommand::<&str>::Download(size);
         self.send_command(cmd).await?;
         loop {
@@ -328,7 +327,7 @@ pub struct DataDownload<'s> {
 
 impl<'s> DataDownload<'s> {
     fn new(fastboot: &'s mut NusbFastBoot, size: u32) -> DataDownload<'s> {
-        let current = fastboot.ep_out.allocate(fastboot.max_out).to_vec();
+        let current = Self::allocate_buffer(fastboot.max_out).to_vec();
         Self {
             fastboot,
             size,
@@ -410,10 +409,14 @@ impl DataDownload<'_> {
             let completion = self.fastboot.ep_out.next_complete().await;
             completion.status.map_err(NusbFastBootError::from)?;
         }
-        let capacity = self.current.capacity();
+
         let data_to_send = std::mem::take(&mut self.current);
-        self.fastboot.ep_out.submit(data_to_send.into());
-        self.current = Vec::with_capacity(capacity);
+        if !data_to_send.is_empty() {
+            self.fastboot.ep_out.submit(data_to_send.into());
+        }
+
+        let max_out = self.fastboot.max_out;
+        self.current = Self::allocate_buffer(max_out);
 
         Ok(())
     }
