@@ -157,10 +157,15 @@ impl NusbFastBoot {
     }
 
     #[tracing::instrument(skip_all, err)]
-    async fn read_response(&mut self) -> Result<FastBootResponse, FastBootResponseParseError> {
+    async fn read_response(&mut self) -> Result<FastBootResponse, NusbFastBootError> {
         self.ep_in.submit(Buffer::new(self.max_in));
-        let resp = self.ep_in.next_complete().await.into_result().unwrap();
-        FastBootResponse::from_bytes(&resp)
+        let resp = self
+            .ep_in
+            .next_complete()
+            .await
+            .into_result()
+            .map_err(NusbFastBootError::Transfer)?;
+        Ok(FastBootResponse::from_bytes(&resp)?)
     }
 
     #[tracing::instrument(skip_all, err)]
@@ -405,8 +410,10 @@ impl DataDownload<'_> {
             let completion = self.fastboot.ep_out.next_complete().await;
             completion.status.map_err(NusbFastBootError::from)?;
         }
+        let capacity = self.current.capacity();
         let data_to_send = std::mem::take(&mut self.current);
         self.fastboot.ep_out.submit(data_to_send.into());
+        self.current = Vec::with_capacity(capacity);
 
         Ok(())
     }
